@@ -6,6 +6,8 @@ import React, { useState, useEffect } from 'react';
 import BlogForm from './blogpost';
 import LoginForm from './login'
 import CategoryForm from './category';
+import BlogList from './BlogList';
+import BlogsByCategory from "./BlogsByCategory";
 
 function App() {
 
@@ -31,6 +33,8 @@ function App() {
                 <Route path="/api/login" element={<LoginForm />} />
                 <Route path="/api/blogpost" element={<BlogForm />} />
                 <Route path="/api/categories" element={<CategoryForm />} />
+                <Route path="/api/blogosphere" element={<BlogList />} />
+                <Route path="/api/blogs_by_category/:category_id" element={<BlogsByCategory />} />
 
                 
                 {/* <Route path="/api/login" element={ isLoggedIn ? <Navigate to="/api/dashboard" /> : <LoginForm setIsLoggedIn={setIsLoggedIn} />} />

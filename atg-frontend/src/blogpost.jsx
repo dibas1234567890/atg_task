@@ -1,53 +1,27 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import axios from "axios";
 
-const BlogForm = () => {
-
-    const token = localStorage.getItem('access_token');
-
-
+const CategoryForm = () => {
     const [formData, setFormData] = useState({
         title: '',
         image: null,
         category: '',
         summary: '',
         content: '',
-        status: ''
+        status: 'draft',
     });
-    const [error, setError] = useState('');
     const [categories, setCategories] = useState([]);
-    const [statuses, setStatuses] = useState([
-        { value: 'draft', label: 'Draft' },
-        { value: 'published', label: 'Published' },
-    ]);
+    const [error, setError] = useState('');
+    const [success, setSuccess] = useState('');
 
-
-    const getCsrfToken = async () => {
-        try {
-            const response = await axios.get('http://127.0.0.1:8000/api/csrf_token', {
-                withCredentials: true
-            });
-            return response.data.csrfToken;
-        } catch (error) {
-            console.error('Error fetching CSRF token:', error);
-            setError('Error fetching CSRF token');
-            return null;
-        }
-    };
-
-    useEffect(  () => {
-
-        const csrfToken =  getCsrfToken();
+    useEffect(() => {
         const fetchCategories = async () => {
             try {
-                const response = await axios.get('http://127.0.0.1:8000/api/categories', 
-                    {headers: {
-                        'X-CSRFToken': csrfToken,
-                                   'Authorization': `Bearer ${token}`
-                     }}  );
-                setCategories(response.data); 
+                const response = await axios.get('http://127.0.0.1:8000/api/categories');
+                console.log(response.data)
+                setCategories(response.data);
             } catch (error) {
-                setError('Failed to fetch categories');
+                console.error('Error fetching categories:', error);
             }
         };
         fetchCategories();
@@ -70,118 +44,144 @@ const BlogForm = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        
+        const data = new FormData();
+        data.append('title', formData.title);
+        data.append('image', formData.image);
+        data.append('category', formData.category); 
+        data.append('summary', formData.summary);
+        data.append('content', formData.content);
+        data.append('status', formData.status);
 
-        const formDataToSubmit = new FormData();
-        Object.keys(formData).forEach((key) => {
-            formDataToSubmit.append(key, formData[key]);
-        });
+        const token = localStorage.getItem('access_token'); 
+        const csrfToken = await getCsrfToken();
 
         try {
-            const response = await axios.post('http://127.0.0.1:8000/api/blogs/', formDataToSubmit, {
+            const response = await axios.post('http://127.0.0.1:8000/api/blogs', data, {
                 headers: {
-                    'Content-Type': 'multipart/form-data',
+                    'Authorization': `Bearer ${token}`,
+                    'X-CSRFToken': csrfToken,
                 },
             });
+            setSuccess("Blog created successfully!");
             console.log("Blog created:", response.data);
+            setFormData({ title: '', image: null, category: '', summary: '', content: '', status: '' });
         } catch (error) {
             setError(error.response.data.detail || 'An error occurred');
         }
     };
 
+    const getCsrfToken = async () => {
+        try {
+            const response = await axios.get('http://127.0.0.1:8000/api/csrf_token', {
+                withCredentials: true,
+            });
+            return response.data.csrfToken;
+        } catch (error) {
+            console.error('Error fetching CSRF token:', error);
+            setError('Error fetching CSRF token');
+            return null;
+        }
+    };
+
     return (
         <div className="container">
-            <h2>Create Blog</h2>
-            {error && <div className="alert alert-danger">{error}</div>}
-            <form onSubmit={handleSubmit}>
-                <div>
-                    <label htmlFor="title">Title</label>
-                    <input
-                        id="title"
-                        type="text"
-                        className="form-control"
-                        value={formData.title}
-                        name="title"
-                        onChange={handleChange}
-                        required
-                    />
+            <div className="row">
+                <div className="col">
+                    <div className="card">
+                        <div className="card-header">Create Blog</div>
+                        <div className="card-body">
+                            {error && <div className="alert alert-danger">{error}</div>}
+                            {success && <div className="alert alert-success">{success}</div>}
+                            <form onSubmit={handleSubmit}>
+                                <div>
+                                    <label htmlFor="title">Title</label>
+                                    <input
+                                        id="title"
+                                        type="text"
+                                        className="form-control"
+                                        value={formData.title}
+                                        name="title"
+                                        onChange={handleChange}
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label htmlFor="image">Image</label>
+                                    <input
+                                        id="image"
+                                        type="file"
+                                        className="form-control"
+                                        name="image"
+                                        onChange={handleFileChange}
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label htmlFor="category">Category</label>
+                                    <select
+                                        id="category"
+                                        className="form-control"
+                                        value={formData.category}
+                                        name="category"
+                                        onChange={handleChange}
+                                        required
+                                    >
+                                        <option value="">Select a category</option>
+                                        {categories.map(category => (
+                                            <option key={category.id} value={category.id}>
+                                                {category.category_name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label htmlFor="summary">Summary</label>
+                                    <textarea
+                                        id="summary"
+                                        className="form-control"
+                                        value={formData.summary}
+                                        name="summary"
+                                        onChange={handleChange}
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label htmlFor="content">Content</label>
+                                    <textarea
+                                        id="content"
+                                        className="form-control"
+                                        value={formData.content}
+                                        name="content"
+                                        onChange={handleChange}
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label htmlFor="status">Status</label>
+                                    <select
+                                        id="status"
+                                        className="form-control"
+                                        value={formData.status}
+                                        name="status"
+                                        onChange={handleChange}
+                                        required
+                                    >
+                                        <option value="">Select a status</option>
+                                        <option value="draft">Draft</option>
+                                        <option value="published">Published</option>
+                                    </select>
+                                </div>
+                                <div className="mt-2">
+                                    <button type="submit" className="btn btn-primary">Create Blog</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
                 </div>
-                <div>
-                    <label htmlFor="image">Image</label>
-                    <input
-                        id="image"
-                        type="file"
-                        className="form-control"
-                        name="image"
-                        onChange={handleFileChange}
-                        required
-                    />
-                </div>
-                <div>
-                    <label htmlFor="category">Category</label>
-                    <select
-                        id="category"
-                        className="form-control"
-                        name="category"
-                        value={formData.category}
-                        onChange={handleChange}
-                        required
-                    >
-                        <option value="">Select Category</option>
-                        {categories.map((category) => (
-                            <option key={category.id} value={category.id}>
-                                {category.category_name}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-                <div>
-                    <label htmlFor="summary">Summary   </label>
-                    <input
-                        id="summary"
-                        type="text"
-                        className="form-control"
-                        value={formData.summary}
-                        name="summary"
-                        onChange={handleChange}
-                        placeholder="Will be truncated in the frontend, doctor will be allowed to add more than 15"
-                        required
-                    />
-                </div>
-                <div>
-                    <label htmlFor="content">Content</label>
-                    <textarea rows="4" cols="50"
-                        id="content"
-                        className="form-control"
-                        value={formData.content}
-                        name="content"
-                        onChange={handleChange}
-                        required
-                    />
-                </div>
-                <div>
-                    <label htmlFor="status">Status</label>
-                    <select
-                        id="status"
-                        className="form-control"
-                        name="status"
-                        value={formData.status}
-                        onChange={handleChange}
-                        required
-                    >
-                        <option value="">Select Status</option>
-                        {statuses.map((status) => (
-                            <option key={status.value} value={status.value}>
-                                {status.label}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-                <div className="mt-2">
-                    <button type="submit" className="btn btn-primary">Create Blog</button>
-                </div>
-            </form>
+            </div>
         </div>
     );
 };
 
-export default BlogForm;
+export default CategoryForm;

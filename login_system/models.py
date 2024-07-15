@@ -48,6 +48,7 @@ class BlogModel(models.Model):
     content = models.CharField( max_length=256)
     status = models.CharField( choices=choices_status, max_length=128)
     category = models.ForeignKey(Category,  on_delete=models.CASCADE)
+    user = models.ForeignKey(CustomerUserProfile, on_delete=models.CASCADE,)
 
 
 

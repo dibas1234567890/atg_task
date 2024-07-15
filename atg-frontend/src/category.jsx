@@ -5,25 +5,26 @@ const CategoryForm = () => {
     const [formData, setFormData] = useState({
         category_name: '',
         category_slug: '',
+       
     });
 
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
 
+    useEffect(() => {
+        setFormData(prevData => ({
+            ...prevData,
+            category_slug: generateSlug(prevData.category_name)
+        }));
+    }, [formData.category_name]);
+
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prevData => {
-            const updatedData = {
-                ...prevData,
-                [name]: value,
-            };
-
-            if (name === 'category_name') {
-                updatedData.category_slug = generateSlug(value);
-            }
-
-            return updatedData;
-        });
+        setFormData(prevData => ({
+            ...prevData,
+            [name]: value,
+        }));
+        
     };
 
     const generateSlug = (name) => {
@@ -34,14 +35,20 @@ const CategoryForm = () => {
             .replace(/[^\w-]+/g, '');
     };
 
+
     const handleSubmit = async (e) => {
         e.preventDefault();
 
         const token = localStorage.getItem('access_token'); 
         const csrfToken = await getCsrfToken();
 
+        const dataToSubmit = {
+            category_name: formData.category_name,
+            category_slug: formData.category_slug,
+        };
+
         try {
-            const response = await axios.post('http://127.0.0.1:8000/api/categories', formData, {
+            const response = await axios.post('http://127.0.0.1:8000/api/categories', dataToSubmit, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'X-CSRFToken': csrfToken,
@@ -49,7 +56,7 @@ const CategoryForm = () => {
             });
             setSuccess("Category created successfully!");
             console.log("Category created:", response.data);
-            setFormData({ category_name: '', category_slug: '' });
+            setFormData({ category_name: '', category_slug: '' }); 
         } catch (error) {
             setError(error.response.data.detail || 'An error occurred');
         }
@@ -67,13 +74,6 @@ const CategoryForm = () => {
             return null;
         }
     };
-
-    useEffect(() => {
-        setFormData(prevData => ({
-            ...prevData,
-            category_slug: generateSlug(prevData.category_name)
-        }));
-    }, [formData.category_name]);
 
     return (
         <div className="container">
@@ -98,16 +98,17 @@ const CategoryForm = () => {
                                     />
                                 </div>
                                 <div>
-                                    <label htmlFor="category_slug">Category Slug - Will Be Auto Generated </label>
+                                    <label htmlFor="category_slug">Category Slug - Auto Generated</label>
                                     <input
                                         id="category_slug"
                                         type="text"
                                         className="form-control"
                                         value={formData.category_slug}
                                         name="category_slug"
-                                        readOnly = 'true'
+                                        readOnly={true}
                                     />
                                 </div>
+                                
                                 <div className="mt-2">
                                     <button type="submit" className="btn btn-primary">Create Category</button>
                                 </div>

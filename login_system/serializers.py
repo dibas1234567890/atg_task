@@ -56,6 +56,7 @@ class CustomLoginSerializer(serializers.Serializer):
 
 
 class CategorySerializer(serializers.Serializer):
+    id = serializers.IntegerField()
     category_name = serializers.CharField()
     category_slug = serializers.SlugField()
 
@@ -64,9 +65,26 @@ class CategorySerializer(serializers.Serializer):
         category_slug = validated_data['category_slug'])
         category_instance.save()
         return category_instance
+    
+    def __init__(self, *args, **kwargs):
+        include_id = kwargs.pop('include_id', False)
+        super().__init__(*args, **kwargs)
+        if not include_id:
+            self.fields.pop('id')
 
 
-class BlogSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = BlogModel
-        fields = '__all__'
+class BlogSerializer(serializers.Serializer):
+    title = serializers.CharField(max_length=256)
+    image = serializers.ImageField()
+    category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all())
+    summary = serializers.CharField(max_length=256)
+    content = serializers.CharField(max_length=256)
+    status = serializers.ChoiceField(choices=[('draft', 'Draft'), ('published', 'Published')])
+    user  = serializers.PrimaryKeyRelatedField(queryset=CustomerUserProfile.objects.all())
+
+    def create(self, validated_data): 
+        blog_instance = BlogModel.objects.create(**validated_data)  
+        blog_instance.save()
+        return blog_instance
+
+
